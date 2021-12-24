@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
         const updateUsers = users.filter(user => user != socket.nickname)
         console.log("updatedUsers: ", updateUsers)
         users = updateUsers
-        io.emit('userList', users)
+        io.emit('userlist', users)
     })
 
     socket.on('nick', (nickname) => { 
@@ -35,20 +35,22 @@ io.on('connection', (socket) => {
         users.push(nickname)
 
         console.log("server : users :", users)
-        io.emit('userList', users);
+        io.emit('userlist', users);
 
     });
 
     socket.on('chat', (data)=> { 
         console.log("chat => nickname : ", socket.nickname)
         const d = new Date()
-        const ts = d.toLocaleString
+        const ts = d.toLocaleString()
         console.log("ts : ", ts)
         const response = `${ts} : ${socket.nickname} : ${data.message}`
-        console.log("ts : ", response)
+        console.log("rs : ", response)
         io.emit('chat', response)
+        socket.broadcast.emit('chat', response);
     });
+});
 
-})
+
     
 

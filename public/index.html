@@ -22,22 +22,22 @@
             $('textarea').val($('textarea').val()+data+'\n')
          });
 
-         socket.on('userList', (data)=> { 
-             console.log("cliente : userList event : data => ", data)
+         socket.on('userlist', (data)=> { 
+             console.log("client : userlist event : data => ", data)
              $('#activeuser').empty()
              data.map((item) => { 
                  $('#activeuser').append(`nickname: <strong>${item}<strong><br/>`)
              })
-             let total = data.length;
-             document.getElementById('lista').innerHTML = total
-             $('b').val(total);
+            //  let total = data.length;
+            //  document.getElementById('list').innerHTML = total
+            //  $('b').val(total);
          })
          
          $(function() { 
              $('#nick').on('click', function(event) { 
                  event.preventDefault()
                  socket.emit('nick', $('#nickText').val());
-                 $('nick').hide()
+                 $('#nick').hide()
                  isNickSet = true
              });
          
@@ -88,6 +88,11 @@
                     </div>
             </div>
             </div>
+            </div>
+            <div>
+                <h4>Active Users: </h4>
+    
+                <div id="activeuser" style='display:inline-block;'></div>
             </div>
         </div> 
     </div>

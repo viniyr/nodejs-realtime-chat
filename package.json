@@ -18,11 +18,12 @@
   },
   "homepage": "https://github.com/viniyr/realtime-chat-nodejs#readme",
   "dependencies": {
-    "@babel/core": "^7.16.0",
-    "@babel/preset-env": "^7.16.4",
-    "@babel/register": "^7.16.0",
+    "@babel/core": "^7.16.5",
+    "@babel/preset-env": "^7.16.5",
+    "@babel/register": "^7.16.5",
     "babel-polyfill": "^6.26.0",
     "express": "^4.17.1",
+    "nodemon": "^2.0.15",
     "socket.io": "^4.4.0"
   }
 }
