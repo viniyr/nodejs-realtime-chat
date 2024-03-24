@@ -22,6 +22,7 @@
     "@babel/preset-env": "^7.16.5",
     "@babel/register": "^7.16.5",
     "babel-polyfill": "^6.26.0",
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "node-iplocate": "^1.0.2",
     "node-localstorage": "^2.2.1",
