@@ -2,11 +2,20 @@ const express = require("express");
 const path = require("path");
 const http = require("http");
 const cors = require("cors");
+const redis = require("redis");
+const MAX_MESSAGES = 30000;
 
-const LocalStorage = require("node-localstorage").LocalStorage;
-let localStorage = new LocalStorage("./storage");
-const iplocate = require("node-iplocate");
-const publicIp = require("public-ip");
+const redisClient = redis.createClient({
+  host: "localhost",
+  port: 6379,
+});
+
+redisClient.on("error", function (error) {
+  console.error(`Redis error: ${error}`);
+});
+
+redisClient.connect();
+
 const app = express();
 app.set("port", process.env.PORT || 2222);
 app.use(cors());
@@ -18,9 +27,8 @@ const server = http.createServer(app).listen(app.get("port"), () => {
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: "*", // Permitir todas as origens
+    origin: "*",
     methods: ["GET", "POST"],
-    allowedHeaders: ["my-custom-header"],
     credentials: true,
   },
 });
@@ -29,55 +37,48 @@ io.listen(server);
 let users = [];
 
 io.on("connection", (socket) => {
-  socket.on("connect", () => {
-    console.log("new connection - socket.id: " + socket.id);
-  });
+  const messages = getRedisMessages();
+  io.emit("allMessages", messages);
+  io.emit("userlist", users+1);
 
   socket.on("disconnect", () => {
     console.log(socket.nickname + "has disconnected");
     const updateUsers = users.filter((user) => user != socket.nickname);
-    console.log("updatedUsers: ", updateUsers);
     users = updateUsers;
     io.emit("userlist", users);
   });
 
-  socket.on("nick", (nickname) => {
-    console.log("nick => nickname : ", nickname);
-    socket.nickname = nickname;
-    users.push(nickname);
+  // socket.on("nick", (nickname) => {
+  //   socket.nickname = nickname;
+  //   users.push(nickname);
 
-    console.log("server : users :", users);
-    io.emit("userlist", users);
-  });
+  //   console.log("server : users :", users);
+  //   io.emit("userlist", users);
+  // });
 
   socket.on("chat", (data) => {
-    console.log("chat => nickname : ", socket.nickname);
-    const d = new Date();
-    const ts = d.toLocaleString();
-    console.log("ts : ", ts);
-    console.log("rs : ", response);
-    var response = `${ts} : ${socket.nickname} : ${data.message}`;
+    console.log(data)
+    const messageData = {
+      user: data.user,
+      message: data.message,
+      timestamp: new Date().toLocaleString(),
+    };
 
-    publicIp
-      .v4()
-      .then((ip) => {
-        console.log("ip ", ip);
-        iplocate(ip)
-          .then((results) => {
-            console.log("iplocate ", results);
-            const respo = JSON.stringify(results.city);
-            localStorage.setItem("userLocal", respo);
-            const response = `${ts} [${respo}] : ${socket.nickname} : ${data.message}`;
-            io.emit("chat", response);
-          })
-          .catch(() => {
-            console.log("ip doenst worked");
-            io.emit("chat", response);
-          });
-      })
-      .catch(() => {
-        console.log("ip doenst worked");
-        io.emit("chat", response);
+    redisClient.rPush("messages", JSON.stringify(messageData)).then(() => {
+      redisClient.lLen("messages").then((length) => {
+        if (length > MAX_MESSAGES) {
+          redisClient.lTrim("messages", length - MAX_MESSAGES, -1);
+        }
       });
+    });
+
+    io.emit("chat", {...messageData, user: `${messageData.user.charAt(0)}***${messageData.user.charAt(messageData.user.length-1)}`});
   });
 });
+
+function getRedisMessages() {
+  redisClient.lRange("messages", 0, -1).then((messages) => {
+    const parsedMessages = messages.map((message) => JSON.parse(message));
+    io.emit("allMessages", parsedMessages);
+  });
+}
